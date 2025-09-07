@@ -1,18 +1,111 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 const appVersion = __APP_VERSION__;
 
-const defaults = [
-  // 'Time flies fast.',
-  // 'Short and sweet.',
-  // 'Vue makes UI fun.',
-  // 'Practice makes perfect.',
-  // 'Type with steady rhythm.',
-  // 'Small steps every day.',
-  // 'Stay calm and type on.',
-  // 'Accuracy over speed.',
-  // 'Hands on home row.',
-  // 'Breathe and relax.',
+const englishSentences = [
+  'I like to read books',
+  'The sun is shining today',
+  'She walks to school every day',
+  'He plays the guitar well',
+  'We are going to the park',
+  'They love ice cream',
+  'It is raining outside',
+  'I have a pet cat',
+  'The dog barked loudly',
+  'She made a cake',
+  'I want to visit Japan',
+  'The train is late',
+  'We flew to New York',
+  'He drove to the beach',
+  'The hotel was clean',
+  'I packed my suitcase',
+  'She lost her passport',
+  'They took a taxi',
+  'The museum was quiet',
+  'I love road trips',
+  'I finished my homework',
+  'The teacher is kind',
+  'He works in an office',
+  'She studies math',
+  'We had a meeting',
+  'I wrote an essay',
+  'They passed the test',
+  'The bell rang',
+  'I need a pencil',
+  'She opened her notebook',
+  'I ate a sandwich',
+  'He drinks coffee',
+  'She baked cookies',
+  'We ordered pizza',
+  'The soup is hot',
+  'I like apples',
+  'They cooked dinner',
+  'The cake was sweet',
+  'I made tea',
+  'She sliced the bread',
+  'I live in a small house',
+  'My brother is tall',
+  'She cleaned the room',
+  'We watched a movie',
+  'The baby is sleeping',
+  'He fixed the door',
+  'I called my mom',
+  'They played together',
+  'The lamp is broken',
+  'I love my family',
+  'It is ten o\'clock',
+  'The sky is blue',
+  'I woke up early',
+  'She went to bed late',
+  'It snowed yesterday',
+  'The wind is strong',
+  'He checked the time',
+  'We saw lightning',
+  'The weather is nice',
+  'I forgot the date',
+  'I ran to the store',
+  'She jumped high',
+  'He opened the window',
+  'We danced all night',
+  'They walked slowly',
+  'I turned the light off',
+  'She climbed the stairs',
+  'He dropped the ball',
+  'We sat on the bench',
+  'I waved goodbye',
+  'I like to draw',
+  'She sings beautifully',
+  'He plays chess',
+  'We went fishing',
+  'They watched cartoons',
+  'I built a puzzle',
+  'She painted a flower',
+  'He played video games',
+  'We listened to music',
+  'I wrote a poem',
+  'I sent a message',
+  'She answered the phone',
+  'He asked a question',
+  'We talked for hours',
+  'They laughed together',
+  'I read the news',
+  'She told a story',
+  'He whispered softly',
+  'We shared a secret',
+  'I replied quickly',
+  'The bird is flying',
+  'I saw a deer',
+  'She planted flowers',
+  'He fed the fish',
+  'We walked in the forest',
+  'The stars are bright',
+  'I heard thunder',
+  'She picked a leaf',
+  'He watched the sunset',
+  'We love nature'
+]
+
+const koreanSentences = [
   '가는 날이 장날이다',
   '가는 말이 고와야 오는 말이 곱다',
   '가랑비에 옷 젖는 줄 모른다',
@@ -125,6 +218,7 @@ const correct = ref(0)
 const total = ref(0)
 const strictMode = ref(true)
 const shuffle = ref(true)
+const languageMode = ref(false) // english is true, korean is false
 const customText = ref('')
 const inputElement = ref(null)
 const isValidating = ref(false)
@@ -155,22 +249,35 @@ const completed = computed(() =>
   typed.value === currentSentence.value && currentSentence.value.length > 0
 )
 
+watch(languageMode, (newValue, oldValue) => {
+  shuffleSentences()
+  // resetAll()
+  start()
+})
+
 function shuffleSentences() {
+  if (languageMode.value === true) {
+    // english mode
+    sentences.value = [...englishSentences]
+  } else {
+    // korean mode
+    sentences.value = [...koreanSentences]
+  }
   sentences.value = [...sentences.value].sort(() => Math.random() - 0.5)
 }
 
 function initSentences() {
-  const saved = localStorage.getItem('typing.sentences')
-  if (saved) {
-    try {
-      sentences.value = JSON.parse(saved)
-    } catch {
-      sentences.value = [...defaults]
-    }
-  } else {
-    sentences.value = [...defaults]
-  }
-  
+  // const saved = localStorage.getItem('typing.sentences')
+  // if (saved) {
+  //   try {
+  //     sentences.value = JSON.parse(saved)
+  //   } catch {
+  //     sentences.value = [...koreanSentences]
+  //   }
+  // } else {
+  //   sentences.value = [...koreanSentences]
+  // }
+
   if (shuffle.value) {
     shuffleSentences()
   }
@@ -217,7 +324,13 @@ async function onInput() {
     return
   }
   
-  await goNextIfCorrect()
+  if (typed.value === currentSentence.value) { 
+    await dingDong()
+    next()
+    if (languageMode.value === true) {
+      start()
+    }
+  }
 } 
 
 function onEnter(event) {
@@ -242,12 +355,6 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-function wait1Second() {
-  return new Promise(resolve => {
-    setTimeout(resolve, 1000)
-  })
-}
-
 async function dingDong() {
   await delay(200)     // Short pause
   beep(300, 800, 0.3)  // "Ding" - higher pitch
@@ -255,22 +362,16 @@ async function dingDong() {
   beep(330, 600, 0.3)  // "Dong" - lower pitch
 }
 
-async function goNextIfCorrect () {
-  if (typed.value === currentSentence.value) { 
-    await dingDong()
-    next()
-  }
-}
-
 function next() {
   if (currentIndex.value < sentences.value.length - 1) {
     currentIndex.value++
   } else {
-    if (shuffle.value) {
-      shuffleSentences()
-    }
+    // if (shuffle.value) {
+    //   shuffleSentences()
+    // }
     currentIndex.value = 0
   }
+
   started.value = false
   typed.value = ''
   startTime.value = null
@@ -316,30 +417,34 @@ function charClass(i) {
   return ''
 }
 
+function toggleLanguageMode() {
+  languageMode.value = !languageMode.value
+}
+
 function toggleMode() {
   strictMode.value = !strictMode.value
 }
 
-function loadDefaults() {
-  customText.value = defaults.join('\n')
-}
+// function loadDefaults() {
+//   customText.value = koreanSentences.join('\n')
+// }
 
-function applyCustom() {
-  const lines = (customText.value || '')
-    .split(/\n+/)
-    .map(s => s.trim())
-    .filter(Boolean)
-  sentences.value = lines.length ? lines : [...defaults]
-  localStorage.setItem('typing.sentences', JSON.stringify(sentences.value))
-  resetAll()
-}
+// function applyCustom() {
+//   const lines = (customText.value || '')
+//     .split(/\n+/)
+//     .map(s => s.trim())
+//     .filter(Boolean)
+//   sentences.value = lines.length ? lines : [...koreanSentences]
+//   localStorage.setItem('typing.sentences', JSON.stringify(sentences.value))
+//   resetAll()
+// }
 
-function clearCustom() {
-  customText.value = ''
-  localStorage.removeItem('typing.sentences')
-  sentences.value = [...defaults]
-  resetAll()
-}
+// function clearCustom() {
+//   customText.value = ''
+//   localStorage.removeItem('typing.sentences')
+//   sentences.value = [...koreanSentences]
+//   resetAll()
+// }
 
 function beep(duration = 200, frequency = 440, volume = 1) {
   const ctx = new (window.AudioContext || window.webkitAudioContext)()
@@ -394,6 +499,19 @@ onMounted(() => {
       </div>
 
       <div style="margin:10px 0"></div>
+        <div style="margin:12px 0" class="row">
+        <!-- <label class="switch">
+          <input type="checkbox" :checked="languageMode" @change="$emit('update:modelValue', $event.target.checked)" />
+          <span class="slider">
+          </span>
+        </label> -->
+
+        <button class="btn primary" @click="toggleLanguageMode">한영 전환</button>
+        <label class="pill">
+          {{ languageMode === true ? 'English' : '한글'}}
+        </label>
+      </div>
+
       <input
         ref="inputElement"
         class="input"
@@ -410,6 +528,7 @@ onMounted(() => {
         autofocus
       />
 
+    
       <div style="margin:12px 0" class="row">
         <button class="btn" @click="start" :disabled="started && !completed">시작</button>
         <button class="btn" @click="next" :disabled="!started">다음</button>
@@ -452,6 +571,47 @@ onMounted(() => {
 </template>
 
 <style>
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 24px;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+input:checked + .slider {
+  background-color: #42b983;
+}
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+
 :root {
   color-scheme: light dark;
 }
